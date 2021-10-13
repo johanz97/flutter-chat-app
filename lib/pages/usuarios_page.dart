@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'package:chatapp/models/usuario.dart';
+import 'package:chatapp/services/auth_service.dart';
 
 class UsuariosPage extends StatefulWidget {
+  const UsuariosPage({Key? key}) : super(key: key);
+
   @override
   State<UsuariosPage> createState() => _UsuariosPageState();
 }
@@ -19,24 +23,28 @@ class _UsuariosPageState extends State<UsuariosPage> {
   ];
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
     return Scaffold(
         appBar: AppBar(
           title: Text(
-            'Mi nombre',
-            style: TextStyle(color: Colors.black54),
+            authService.usuario.nombre,
+            style: const TextStyle(color: Colors.black54),
           ),
           elevation: 1,
           backgroundColor: Colors.white,
           leading: IconButton(
-            icon: Icon(
+            icon: const Icon(
               Icons.exit_to_app,
               color: Colors.black54,
             ),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, 'login');
+              AuthService.deleteToken();
+            },
           ),
           actions: [
             Container(
-              margin: EdgeInsets.only(right: 10),
+              margin: const EdgeInsets.only(right: 10),
               child: Icon(
                 Icons.check_circle,
                 color: Colors.blue[400],
@@ -73,7 +81,7 @@ class _UsuariosPageState extends State<UsuariosPage> {
 
   _cargarUsuarios() async {
     // monitor network fetch
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 1000));
     // if failed,use refreshFailed()
     _refreshController.refreshCompleted();
   }
