@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'package:chatapp/models/usuario.dart';
+
 import 'package:chatapp/services/auth_service.dart';
+import 'package:chatapp/services/chat_service.dart';
+import 'package:chatapp/services/socket_service.dart';
+import 'package:chatapp/services/usuarios_service.dart';
 
 class UsuariosPage extends StatefulWidget {
   const UsuariosPage({Key? key}) : super(key: key);
@@ -15,15 +19,18 @@ class UsuariosPage extends StatefulWidget {
 class _UsuariosPageState extends State<UsuariosPage> {
   final RefreshController _refreshController =
       RefreshController(initialRefresh: false);
-  final usuarios = [
-    Usuario(nombre: 'Maria', email: 'test1@test.com', online: true, uid: '1'),
-    Usuario(
-        nombre: 'Alejandro', email: 'test2@test.com', online: false, uid: '2'),
-    Usuario(nombre: 'Johan', email: 'test3@test.com', online: true, uid: '3'),
-  ];
+  final usuarioService = UsuariosService();
+  List<Usuario> usuarios = [];
+  @override
+  void initState() {
+    _cargarUsuarios();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
+    final socketService = Provider.of<SocketService>(context);
     return Scaffold(
         appBar: AppBar(
           title: Text(
@@ -38,6 +45,7 @@ class _UsuariosPageState extends State<UsuariosPage> {
               color: Colors.black54,
             ),
             onPressed: () {
+              socketService.disconnect();
               Navigator.pushReplacementNamed(context, 'login');
               AuthService.deleteToken();
             },
@@ -45,14 +53,15 @@ class _UsuariosPageState extends State<UsuariosPage> {
           actions: [
             Container(
               margin: const EdgeInsets.only(right: 10),
-              child: Icon(
-                Icons.check_circle,
-                color: Colors.blue[400],
-              ),
-              //Icon(
-              //  Icons.offline_bolt,
-              //  color: Colors.red,
-              //),
+              child: (socketService.serverStatus == ServerStatus.online)
+                  ? Icon(
+                      Icons.check_circle,
+                      color: Colors.blue[400],
+                    )
+                  : const Icon(
+                      Icons.offline_bolt,
+                      color: Colors.red,
+                    ),
             )
           ],
         ),
@@ -80,8 +89,9 @@ class _UsuariosPageState extends State<UsuariosPage> {
   }
 
   _cargarUsuarios() async {
-    // monitor network fetch
-    await Future.delayed(const Duration(milliseconds: 1000));
+    usuarios = await usuarioService.getUsuarios();
+    setState(() {});
+    //await Future.delayed(const Duration(milliseconds: 1000));
     // if failed,use refreshFailed()
     _refreshController.refreshCompleted();
   }
@@ -110,6 +120,11 @@ class _UserListTile extends StatelessWidget {
             color: usuario.online ? Colors.green : Colors.red,
             borderRadius: BorderRadius.circular(100)),
       ),
+      onTap: () {
+        final chatService = Provider.of<ChatService>(context, listen: false);
+        chatService.usuarioPara = usuario;
+        Navigator.pushNamed(context, 'chat');
+      },
     );
   }
 }
